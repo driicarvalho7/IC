@@ -57,6 +57,9 @@ function api_return_html(){
     elements.videoIframe.src = api_return.url;
     elements.videoIframe.style.display = 'block';
     elements.resumoButton.style.display = 'block';
+
+    // Chame a função para gerar as legendas
+    gerar_legendas();
 }
   
 // Função para fazer a requisição HTTP GET
@@ -87,44 +90,33 @@ function carregarResumo(idioma) {
         });
 }
 
-function gerar_legendas(){
-    // Converter as legendas de SRT para VTT
+function gerar_legendas() {
+    // Converter as legendas de SRT para VTT e configurar as legendas dinamicamente
     for (const subtitle of api_return.metadata.subtitles) {
         fetch(subtitle.url)
             .then((response) => response.text())
             .then((srtText) => {
-            const vttText = srtToVtt(srtText);
-            subtitle.url = URL.createObjectURL(new Blob([vttText], { type: 'text/vtt' }));
+                const vttText = srtToVtt(srtText);
+                subtitle.url = URL.createObjectURL(new Blob([vttText], { type: 'text/vtt' }));
+
+                // Adicione as legendas aos tracks
+                const track = document.createElement('track');
+                track.kind = 'subtitles';
+                track.label = subtitle.language;
+                track.src = subtitle.url;
+                track.srclang = subtitle.language;
+                if (subtitle.default) {
+                    track.default = true;
+                }
+                elements.videoIframe.appendChild(track);
             })
             .catch((error) => {
-            console.error('Erro na conversão de SRT para VTT:', error);
+                console.error('Erro na conversão de SRT para VTT:', error);
             });
     }
 
-    // Configurar as legendas dinamicamente
-    const video = elements.videoIframe;
-    video.querySelector('source').src = api_return.url;
-
-    // Limpar as legendas existentes (se houver)
-    while (video.firstChild) {
-    video.removeChild(video.firstChild);
-    }
-
-    // Adicionar as legendas aos tracks
-    for (const subtitle of api_return.metadata.subtitles) {
-    const track = document.createElement('track');
-    track.kind = 'subtitles';
-    track.label = subtitle.language;
-    track.src = subtitle.url;
-    track.srclang = subtitle.language;
-    if (subtitle.default) {
-        track.default = true;
-    }
-    video.appendChild(track);
-    }
-
-    // Atualizar o vídeo para refletir as alterações nas legendas
-    video.load();
+    // Atualize o vídeo para refletir as alterações nas legendas
+    elements.videoIframe.load();
 }
 
 // Função para alternar a visibilidade de um elemento
