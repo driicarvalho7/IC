@@ -7,7 +7,6 @@ const elements = {
     resumoDiv: document.getElementById('resumo-div'),
     exportPdfButton: document.getElementById('export-pdf'),
     getApiButton: document.getElementById('get-api-button'),
-    apiDataDiv: document.getElementById('api-data'),
     resumoText: document.getElementById('resumo-text'),
     videoIframe: document.getElementById('video-iframe'),
 };
@@ -27,40 +26,6 @@ let api_return = {
     name: '',
     url: ''
 }
-
-// Função para manipular o HTML com o retorno da API
-function api_return_html(){
-    elements.apiDataDiv.style.display = 'block';
-    elements.apiDataDiv.innerHTML = `
-    <h4>Informações da API:</h4>
-    <p><strong>ID:</strong> ${api_return.id}</p>
-    <p><strong>Nome:</strong> ${api_return.name}</p>
-    <p><strong>URL do Vídeo:</strong> <a href="${api_return.url}" target="_blank">${api_return.url}</a></p>
-    <h4>Legendas Disponíveis:</h4>
-    <ul>
-        ${api_return.metadata.subtitles
-        .map(
-            (subtitle) => `<li><strong>${subtitle.language}:</strong> <a href="${subtitle.url}" target="_blank">${subtitle.url}</a></li>`
-        )
-        .join('')}
-    </ul>
-    <h4>Transcrições Disponíveis:</h4>
-    <ul>
-        ${api_return.metadata.transcripts
-        .map(
-            (transcript) => `<li><strong>${transcript.language}:</strong> <a href="${transcript.url}" target="_blank">${transcript.url}</a></li>`
-        )
-        .join('')}
-    </ul>
-    `;
-
-    elements.videoIframe.src = api_return.url;
-    elements.videoIframe.style.display = 'block';
-    elements.resumoButton.style.display = 'block';
-
-    // Chame a função para gerar as legendas
-    gerar_legendas();
-}
   
 // Função para fazer a requisição HTTP GET
 function getApiData() {
@@ -69,14 +34,14 @@ function getApiData() {
         .then((data) => {
         console.log('data: ', data);
         api_return = data;
-
-        api_return_html();
+        elements.videoIframe.style.display = 'block';
+        elements.resumoButton.style.display = 'block';
         })
         .catch((error) => {
         console.error('Erro na requisição API:', error);
         });
 }
-elements.getApiButton.addEventListener('click', getApiData);
+document.addEventListener('DOMContentLoaded', getApiData);
 
 // Função para carregar o resumo com base no idioma selecionado
 function carregarResumo(idioma) {
@@ -88,35 +53,6 @@ function carregarResumo(idioma) {
         .catch((error) => {
         console.error(`Erro ao carregar resumo em ${idioma}:`, error);
         });
-}
-
-function gerar_legendas() {
-    // Converter as legendas de SRT para VTT e configurar as legendas dinamicamente
-    for (const subtitle of api_return.metadata.subtitles) {
-        fetch(subtitle.url)
-            .then((response) => response.text())
-            .then((srtText) => {
-                const vttText = srtToVtt(srtText);
-                subtitle.url = URL.createObjectURL(new Blob([vttText], { type: 'text/vtt' }));
-
-                // Adicione as legendas aos tracks
-                const track = document.createElement('track');
-                track.kind = 'subtitles';
-                track.label = subtitle.language;
-                track.src = subtitle.url;
-                track.srclang = subtitle.language;
-                if (subtitle.default) {
-                    track.default = true;
-                }
-                elements.videoIframe.appendChild(track);
-            })
-            .catch((error) => {
-                console.error('Erro na conversão de SRT para VTT:', error);
-            });
-    }
-
-    // Atualize o vídeo para refletir as alterações nas legendas
-    elements.videoIframe.load();
 }
 
 // Função para alternar a visibilidade de um elemento
