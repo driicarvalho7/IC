@@ -6,3 +6,4 @@ Este é um repositório que irei enviar as atualizações realizadas na constru�
 
 - Organização de pastas está sendo feita conforme as publicações em:
 <https://ascdigital1.websiteseguro.com/IC> / Prototipo_Nome
+
